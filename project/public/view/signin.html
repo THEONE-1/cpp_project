@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudDrive - 用户登录</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .login-form {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .button {
+            padding: 12px 24px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: 100%;
+        }
+        .button:hover {
+            background-color: white;
+            color: #764ba2;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .cloud-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            color: #ff6b6b;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-form">
+        <div class="cloud-icon">☁️</div>
+        <h2>欢迎回来</h2>
+        <div class="input-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="输入用户名" required>
+        </div>
+        <div class="input-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" placeholder="输入密码" required>
+        </div>
+        <button type="button" class="button" onclick="onSignIn()">登 录</button>
+        <div id="error-message" class="error-message"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        function onSignIn() {
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+            $.ajax({
+                url: "/user/signin",
+                type: "POST",
+                data: {
+                    "username": username,
+                    "password": password
+                },
+                success: function (response) {
+                    if (response === "FALT") {
+                        document.getElementById('error-message').innerText = '密码错误，请重新输入。';
+                    } else {
+                        var resp = JSON.parse(response);
+                        if (resp.data && resp.data.Token) {
+                            localStorage.setItem("token", resp.data.Token);
+                            localStorage.setItem("username", resp.data.Username);
+                            window.location.href = resp.data.Location;
+                        } else {
+                            document.getElementById('error-message').innerText = '登录失败，请检查用户名和密码。';
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    document.getElementById('error-message').innerText = '登录错误：' + xhr.statusText;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

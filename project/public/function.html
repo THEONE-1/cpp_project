@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudDrive - 文件上传和下载</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        #file {
+            display: none;
+        }
+        .file-name {
+            margin-top: 10px;
+            font-style: italic;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: white;
+            color: #764ba2;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .cloud-icon {
+            font-size: 60px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="cloud-icon">☁️</div>
+        <h1>文件上传</h1>
+
+        <!-- File Upload Form -->
+        <form id="uploadForm" action="/file/upload" method="post" enctype="multipart/form-data">
+            <div class="upload-area" onclick="document.getElementById('file').click()">
+                <div class="upload-icon">📁</div>
+                <p>点击或拖拽文件到这里上传</p>
+                <input type="file" id="file" name="file" onchange="updateFileName()">
+                <p class="file-name" id="fileName"></p>
+            </div>
+            <input type="hidden" id="fileSha1" name="fileSha1">
+            <button type="submit">上传文件</button>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.0/spark-md5.min.js"></script>
+    <script>
+        function queryParams() {
+            return `username=${encodeURIComponent(localStorage.getItem('username'))}&token=${encodeURIComponent(localStorage.getItem('token'))}`;
+        }
+
+        function updateFormAction() {
+            var form = document.getElementById('uploadForm');
+            if (form) {
+                form.action = `/file/upload?${queryParams()}`;
+            }
+        }
+
+        function updateFileName() {
+            var fileInput = document.getElementById('file');
+            var fileNameDisplay = document.getElementById('fileName');
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.textContent = '选择的文件: ' + fileInput.files[0].name;
+                calculateSHA1(fileInput.files[0]);
+            } else {
+                fileNameDisplay.textContent = '';
+            }
+        }
+
+        function calculateSHA1(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const contents = e.target.result;
+                    const wordArray = CryptoJS.lib.WordArray.create(contents);
+                    const hash = CryptoJS.SHA1(wordArray);
+                    const sha1 = hash.toString(CryptoJS.enc.Hex);
+                    resolve(sha1);
+                };
+                reader.onerror = function(e) {
+                    reject('Error reading file');
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        window.onload = function() {
+            updateFormAction();
+            var form = document.getElementById('uploadForm');
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                var fileInput = document.getElementById('file');
+                if (fileInput.files.length > 0) {
+                    try {
+                        const sha1Value = await calculateSHA1(fileInput.files[0]);
+                        document.getElementById('fileSha1').value = sha1Value;
+                        submitForm(sha1Value);
+                    } catch (error) {
+                        alert('SHA1 计算错误: ' + error);
+                    }
+                } else {
+                    alert('请选择要上传的文件。');
+                }
+            });
+        };
+
+        function submitForm(sha1Value) {
+            var form = document.getElementById('uploadForm');
+            var originalAction = form.action;
+            form.action = originalAction + (originalAction.includes('?') ? '&' : '?') + 'fileSha1=' + encodeURIComponent(sha1Value);
+            form.submit();
+        }
+        // 添加拖拽上传功能
+        var uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'transparent';
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'transparent';
+            var file = e.dataTransfer.files[0];
+            document.getElementById('file').files = e.dataTransfer.files;
+            updateFileName();
+        });
+    </script>
+</body>
+</html>

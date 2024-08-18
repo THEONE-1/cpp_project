@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudDrive 主页</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <style>
+        /* 保留原有的样式 */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .cloud-icon {
+            font-size: 40px;
+        }
+        h1, h2 {
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .content {
+            display: flex;
+            gap: 30px;
+        }
+        .user-profile, .file-list {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .user-profile {
+            flex: 1;
+        }
+        .file-list {
+            flex: 3;
+            overflow-x: auto;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:hover {
+            background-color: white;
+            color: #764ba2;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        /* 新增的用户信息区样式 */
+        .user-profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            margin-bottom: 20px;
+        }
+        .user-info {
+            width: 100%;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        .info-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        .info-icon {
+            margin-right: 10px;
+            font-size: 20px;
+            width: 30px;
+            text-align: center;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        th {
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
+        tr {
+            transition: all 0.3s ease;
+        }
+        tr:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        td:first-child, th:first-child {
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+        }
+        td:last-child, th:last-child {
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+        .file-icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="cloud-icon">☁️</span> CloudDrive 主页</h1>
+            <button onclick="toUploadFile()">上传文件</button>
+        </div>
+        <div class="content">
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-info">
+                    <div class="info-item">
+                        <span class="info-icon"><i class="fas fa-user"></i></span>
+                        <span id="username">用户名: 加载中...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon"><i class="fas fa-calendar-alt"></i></span>
+                        <span id="regtime">注册时间: 加载中...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="file-list">
+                <h2>文件列表</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>文件名</th>
+                            <th>文件大小</th>
+                            <th>上传时间</th>
+                            <th>最后更新</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="filetbl1">
+                        <!-- 文件列表将通过 JavaScript 填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function queryParams() {
+            return `username=${localStorage.getItem('username')}&token=${localStorage.getItem('token')}`;
+        }
+
+        function updateUserInfo() {
+            $.ajax({
+                url: "/user/info?" + queryParams(),
+                type: "POST",
+                success: function (body) {
+                    const resp = JSON.parse(body);
+                    $('#username').text(`用户名: ${resp.data.Username}`);
+                    $('#regtime').text(`注册时间: ${resp.data.SignupAt}`);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.error("获取用户信息失败:", textStatus, errorThrown);
+                }
+            });
+        }
+
+
+
+        function getFileIcon(fileName) {
+            const extension = fileName.split('.').pop().toLowerCase();
+            switch(extension) {
+                case 'pdf': return 'fas fa-file-pdf';
+                case 'doc':
+                case 'docx': return 'fas fa-file-word';
+                case 'xls':
+                case 'xlsx': return 'fas fa-file-excel';
+                case 'ppt':
+                case 'pptx': return 'fas fa-file-powerpoint';
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'gif': return 'fas fa-file-image';
+                case 'mp3':
+                case 'wav': return 'fas fa-file-audio';
+                case 'mp4':
+                case 'avi': return 'fas fa-file-video';
+                case 'zip':
+                case 'rar': return 'fas fa-file-archive';
+                default: return 'fas fa-file';
+            }
+        }
+
+        function formatFileSize(size) {
+            if (size < 1024) return size + ' B';
+            if (size < 1024 * 1024) return (size / 1024).toFixed(2) + ' KB';
+            if (size < 1024 * 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + ' MB';
+            return (size / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+        }
+
+        function updateFileList() {
+            $.ajax({
+                url: "/file/query?" + queryParams(),
+                type: "POST",
+                data: { limit: 15 },
+                success: function(body) {
+                    const data = JSON.parse(body);
+                    const fileList = $('#filetbl1');
+                    fileList.empty();
+                    data.forEach(function(file) {
+                        const fileIcon = getFileIcon(file.FileName);
+                        fileList.append(`
+                            <tr>
+                                <td><i class="${fileIcon} file-icon"></i>${file.FileName}</td>
+                                <td>${formatFileSize(file.FileSize)}</td>
+                                <td>${file.UploadAt}</td>
+                                <td>${file.LastUpdated}</td>
+                                <td>
+                                    <button onclick="downloadFile('http://192.168.88.129:8080/file/downloadurl?filehash=${file.FileHash}&${queryParams()}')">
+                                        下载
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("获取文件列表失败:", textStatus, errorThrown);
+                }
+            });
+        }
+
+        function toUploadFile() {
+            window.location.href = '/file/upload?' + queryParams();
+        }
+
+        function downloadFile(durl) {
+            $.ajax({
+                url: durl,
+                type: "POST",
+                success: function (body) {
+                    const iframe = document.createElement("iframe");
+                    iframe.src = body;
+                    iframe.style.display = "none";
+                    document.body.appendChild(iframe);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.error("启动下载失败:", textStatus, errorThrown);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            updateUserInfo();
+            updateFileList();
+        });
+    </script>
+</body>
+</html>
