@@ -1,0 +1,14 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build & run",
+            "type": "shell",
+            "command": "g++ '${file}' -o '${fileDirname}/${fileBasenameNoExtension}' && '${fileDirname}/${fileBasenameNoExtension}'",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+} 
