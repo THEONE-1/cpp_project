@@ -32,9 +32,7 @@ public:
     bool connected() const {return state_==kConnected;}
     bool disconnected() const {return state_==kDisconnected;}
     bool connecting() const {return state_==kConnecting;}
-    
-    void send(const void* message, int len);
-    void send(Buffer* buf);
+
     void send(const std::string& buf);
     void shutdown();
     

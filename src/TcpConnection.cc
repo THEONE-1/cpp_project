@@ -99,6 +99,7 @@ void TcpConnection::handleWrite()
         LOG_INFO("TcpConnection fd=%d is down,no more writing\n",channel_->fd());
     }
 }
+//poller=>channel::closeCallback=>TcpConnection::handleClose
 void TcpConnection::handleClose()
 {
     LOG_INFO("fd=%d is closed",channel_->fd());
@@ -107,7 +108,7 @@ void TcpConnection::handleClose()
 
     TcpConnectionPtr connPtr(shared_from_this());
     connectionCallback_(connPtr);//执行连接关闭的回调
-    closeCallback_(connPtr);//关闭连接的回调
+    closeCallback_(connPtr);//关闭连接的回调，执行的是TcpServer::removeConnection
 }
 void TcpConnection::handleError()
 {
@@ -136,16 +137,57 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
         return;
     }
 
-    if(!channel_->isWriting()&&outputBuffer_.readableBytes()==0)
+    // 如果当前channel没有注册写事件，且输出缓冲区为空
+    if(!channel_->isWriting() && outputBuffer_.readableBytes() == 0)
     {
-        nwrote=::write(channel_->fd(),data,len);
-        if(nwrote>=0)
+        // 直接发送数据
+        nwrote = ::write(channel_->fd(), data, len);
+        if(nwrote >= 0)
         {
-            remaining=len-nwrote;
-            if(remaining==0&&writeCompleteCallback_)
+            // 计算剩余未发送的数据长度
+            remaining = len - nwrote;
+            // 如果数据全部发送完成，且设置了写完成回调函数
+            if(remaining == 0 && writeCompleteCallback_)
             {
-                loop_->queueInLoop(std::bind(writeCompleteCallback_,shared_from_this()));
+                // 将写完成回调函数添加到loop的任务队列中
+                loop_->queueInLoop(std::bind(writeCompleteCallback_, shared_from_this()));
             }
+        }
+        else
+        {
+            nwrote = 0;
+            if(errno!=EWOULDBLOCK)
+            {
+                LOG_ERROR("TcpConnection::sendInLoop");
+                if(errno==EPIPE||errno==ECONNRESET)
+                {
+                    faultError = true;
+                }
+            }
+        }
+    }
+    // 如果数据没有全部发送完成，则将数据添加到输出缓冲区中,geichannel注册epollout事件，poller发现tcp的发送缓冲区有
+    //空间，会通知相应的sock-channel调用writeCallback_回调方法，也就是TcpConnection::handleWrite方法，
+    //handleWrite方法会调用socket的send方法，将outputBuffer_中的数据发送出去
+    if(!faultError && remaining > 0)
+    {
+        //目前发送缓冲区剩余的待发送数据长度
+        size_t oldLen = outputBuffer_.readableBytes();
+        if(oldLen+remaining>=highWaterMark_&&oldLen<highWaterMark_&&highWaterMarkCallback_)
+        {
+            loop_->queueInLoop(std::bind(highWaterMarkCallback_,shared_from_this(),oldLen+remaining));
+        }
+        //将剩余未发送的数据添加到outputBuffer_中
+        // 这里是将未发送完的数据写入到输出缓冲区outputBuffer_中
+        // 而上面outputBuffer_.readableBytes()是读取输出缓冲区中待发送的数据长度
+        // 因为对于输出缓冲区来说:
+        // 1. append是写入数据到缓冲区,等待后续发送
+        // 2. readableBytes是读取缓冲区中还有多少数据未发送
+        // 所以一个是写操作一个是读操作,但都是针对输出缓冲区
+        outputBuffer_.append(static_cast<const char*>(data)+nwrote,remaining);
+        if(!channel_->isWriting())
+        {
+            channel_->enableWriting();
         }
     }
 }
@@ -162,5 +204,38 @@ void TcpConnection::send(const std::string& buf)
             // 通过runInLoop将sendInLoop函数转发到IO线程中执行
             loop_->runInLoop(std::bind(&TcpConnection::sendInLoop,this,buf.data(),buf.size()));
         }
+    }
+}
+void TcpConnection::connectEstablished()
+{
+    setState(kConnected);
+    channel_->tie(shared_from_this());//将channel与TcpConnection绑定
+    channel_->enableReading();
+    connectionCallback_(shared_from_this());
+}
+void TcpConnection::connectDestroyed()
+{
+    if(state_==kConnected)
+    {
+        setState(kDisconnected);
+        channel_->disableAll();
+        connectionCallback_(shared_from_this());
+    }
+}
+void TcpConnection::shutdown()
+{
+    if(state_==kConnected)
+    {
+        setState(kDisconnecting);
+        loop_->runInLoop(std::bind(&TcpConnection::shutdownInLoop,this));
+    }
+}
+
+void TcpConnection::shutdownInLoop()
+{
+    if(!channel_->isWriting())//说明outputBuffer_中没有待发送的数据
+    {
+        socket_->shutdownWrite();
+        setState(kDisconnected);
     }
 }

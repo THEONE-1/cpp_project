@@ -8,6 +8,8 @@ Poller::Poller(EventLoop* loop)
     LOG_INFO("Poller::Poller()");
 }
 
+Poller::~Poller() = default;
+
 bool Poller::hasChannel(Channel* channel) const{
     // 查找channel对应的文件描述符
     auto it=channels_.find(channel->fd());

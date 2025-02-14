@@ -4,6 +4,8 @@
 #include"EventLoop.hh"
 #include"Acceptor.hh"
 #include"InetAddress.hh"
+#include"TcpConnection.hh"
+#include"Logger.hh"
 #include"EventLoopThreadPool.hh"
 #include"Callbacks.hh"  
 #include"Buffer.hh"

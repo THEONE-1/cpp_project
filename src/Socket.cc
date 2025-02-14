@@ -31,10 +31,14 @@ void Socket::listen()
 
 int Socket::accept(InetAddress* peeraddr)
 {
+    /*
+    1.accept函数的参数不合法
+    对返回的connfd没有设置非阻塞
+    */
     sockaddr_in addr;
     bzero(&addr,sizeof addr);
     socklen_t len=sizeof(addr);
-    int connfd=::accept(sockfd_,(sockaddr*)&addr,&len);
+    int connfd=::accept4(sockfd_,(sockaddr*)&addr,&len,SOCK_NONBLOCK|SOCK_CLOEXEC);//返回的connfd是非阻塞的
     if(connfd<0)
     {
         LOG_ERROR("accept error");

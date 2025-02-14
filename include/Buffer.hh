@@ -86,6 +86,10 @@ public:
    
     }
 
+    // 向缓冲区追加数据
+    // 1. 确保缓冲区有足够空间容纳新数据
+    // 2. 将数据拷贝到写指针位置
+    // 3. 更新写指针位置
     void append(const char* data, size_t len)
     {
         ensureWriteableBytes(len);
